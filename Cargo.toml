@@ -1,0 +1,74 @@
+[package]
+name = "shade"
+version = "0.1.0"
+edition = "2021"
+authors = ["Shade Team"]
+description = "Lightweight, self-hosted Identity & Access service with OIDC/OAuth2 support"
+license = "MIT"
+
+[[bin]]
+name = "shade"
+path = "src/main.rs"
+
+[dependencies]
+# Core web framework
+axum = { version = "0.7", features = ["macros", "headers", "tower-log", "multipart"] }
+tower = { version = "0.4", features = ["util", "timeout", "load-shed", "limit"] }
+tower-http = { version = "0.5", features = ["fs", "cors", "compression-gzip", "trace"] }
+tokio = { version = "1.0", features = ["full"] }
+hyper = { version = "1.0", features = ["full"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid", "json"] }
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+# Crypto & JWT
+jsonwebtoken = "9.2"
+ring = "0.17"
+base64 = "0.22"
+sha2 = "0.10"
+argon2 = "0.5"
+rand = "0.8"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_urlencoded = "0.7"
+
+# HTTP client for OAuth providers
+reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+
+# Configuration
+config = "0.14"
+dotenvy = "0.15"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "1.0"
+
+# Async utilities
+futures = "0.3"
+
+# Password hashing and TOTP
+totp-rs = { version = "5.4", features = ["otpauth"] }
+
+# Template engine for HTML responses
+askama = { version = "0.12", features = ["with-axum"] }
+
+# Rate limiting
+governor = "0.6"
+
+# Metrics
+prometheus = "0.13"
+
+[dev-dependencies]
+tokio-test = "0.4"

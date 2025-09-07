@@ -1,0 +1,82 @@
+version: "3.9"
+services:
+  shade:
+    build: .
+    container_name: shade
+    restart: unless-stopped
+    environment:
+      # Core configuration
+      - RUST_LOG=info
+      - SHADE_ISSUER=https://auth.localhost:8080
+      - SHADE_EXTERNAL_URL=https://auth.localhost:8080
+      - SHADE_COOKIE_SECRET=base64:dGhpc19pc19hX3Zlcnlfc2VjdXJlX2Nvb2tpZV9zZWNyZXRfdGhhdF9pc19sb25nX2Vub3VnaA==
+      - SHADE_JWT_SIGNING_ALG=RS256
+      
+      # Database
+      - DATABASE_URL=postgres://shade:shadepass@db/shade
+      - DATABASE_MAX_CONNECTIONS=10
+      
+      # Redis
+      - REDIS_URL=redis://redis:6379
+
+      # Admin bootstrap
+      - SHADE_ADMIN_EMAIL=admin@example.com
+      - SHADE_ADMIN_PASSWORD=ChangeMe!Long1
+
+      # OAuth Providers (configure as needed)
+      # Google
+      # - OIDC_GOOGLE_CLIENT_ID=your_google_client_id
+      # - OIDC_GOOGLE_CLIENT_SECRET=your_google_client_secret
+      # - OIDC_GOOGLE_REDIRECT_URI=https://auth.localhost:8080/callback/google
+
+      # GitHub
+      # - OIDC_GITHUB_CLIENT_ID=your_github_client_id
+      # - OIDC_GITHUB_CLIENT_SECRET=your_github_client_secret
+      # - OIDC_GITHUB_REDIRECT_URI=https://auth.localhost:8080/callback/github
+
+      # Microsoft Entra (Azure AD)
+      # - OIDC_ENTRA_TENANT_ID=your_tenant_id
+      # - OIDC_ENTRA_CLIENT_ID=your_entra_client_id
+      # - OIDC_ENTRA_CLIENT_SECRET=your_entra_client_secret
+      # - OIDC_ENTRA_REDIRECT_URI=https://auth.localhost:8080/callback/entra
+
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./migrations:/usr/local/share/shade/migrations:ro
+
+  db:
+    image: postgres:16
+    container_name: shade-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=shade
+      - POSTGRES_USER=shade
+      - POSTGRES_PASSWORD=shadepass
+    volumes:
+      - shade-dbdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shade -d shade"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: shade-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  shade-dbdata:
