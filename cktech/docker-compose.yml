@@ -1,0 +1,206 @@
+version: "3.9"
+
+# CKTech.org Production Deployment
+# Domain: auth.cktech.org
+# Nginx: Host running nginx with wildcard cert
+# Deployment path: /opt/shade
+
+networks:
+  shade-internal:
+    driver: bridge
+    internal: false
+
+services:
+  shade:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: shade
+    restart: unless-stopped
+
+    # Load environment from .env file in cktech/ directory
+    env_file:
+      - .env
+
+    # Expose only to localhost:8288 for nginx proxy
+    ports:
+      - "127.0.0.1:8288:8080"
+
+    networks:
+      - shade-internal
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    volumes:
+      # Mount migrations from parent directory
+      - ../migrations:/usr/local/share/shade/migrations:ro
+      # Logs
+      - shade-logs:/var/lib/shade/logs
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:16-alpine
+    container_name: shade-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shade}
+      POSTGRES_USER: ${POSTGRES_USER:-shade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      POSTGRES_SHARED_BUFFERS: "256MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "1GB"
+      POSTGRES_WORK_MEM: "16MB"
+
+    networks:
+      - shade-internal
+
+    volumes:
+      - shade-dbdata:/var/lib/postgresql/data
+
+    # Optional: Expose to localhost for direct access
+    # Comment out for better security
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shade} -d ${POSTGRES_DB:-shade}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: shade-redis
+    restart: unless-stopped
+
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-changeme}
+
+    networks:
+      - shade-internal
+
+    volumes:
+      - shade-redis:/data
+
+    # Optional: Expose to localhost
+    ports:
+      - "127.0.0.1:6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Database backup service
+  db-backup:
+    image: postgres:16-alpine
+    container_name: shade-db-backup
+    restart: "no"
+    profiles: ["backup"]
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shade}
+      POSTGRES_USER: ${POSTGRES_USER:-shade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      BACKUP_DIR: /backups
+
+    networks:
+      - shade-internal
+
+    volumes:
+      - ./backups:/backups
+
+    entrypoint: /bin/sh
+    command: >
+      -c "pg_dump -h db -U $$POSTGRES_USER -d $$POSTGRES_DB > /backups/shade_$$(date +%Y%m%d_%H%M%S).sql"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  shade-dbdata:
+    driver: local
+  shade-redis:
+    driver: local
+  shade-logs:
+    driver: local
+
+# Usage:
+# docker compose up -d --build
+# docker compose logs -f
+# docker compose down
+# docker compose --profile backup run --rm db-backup

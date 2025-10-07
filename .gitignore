@@ -2,9 +2,27 @@
 Cargo.lock
 **/*.rs.bk
 
+# Environment files (contains secrets!)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# CKTech deployment (private configuration)
+cktech/.env
+cktech/backups/
+cktech/*.key
+cktech/*.pem
+cktech/*.crt
+
+# Backup files
+backups/
+*.sql
+*.sql.gz
 
 # Added by cargo
 #
 # already existing elements were commented out
 
 #/target
+CLAUDE.md

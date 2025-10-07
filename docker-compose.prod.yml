@@ -1,0 +1,220 @@
+version: "3.9"
+
+# Production deployment for Shade behind nginx reverse proxy
+# This assumes nginx is running on the host (not in Docker) and will proxy to Shade
+
+networks:
+  shade-internal:
+    driver: bridge
+    internal: false  # Allow shade to reach internet for OAuth providers
+
+services:
+  shade:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shade
+    restart: unless-stopped
+
+    # Environment variables from .env.production file
+    env_file:
+      - .env.production
+
+    # Only expose to localhost since nginx on host will proxy
+    # nginx on host can reach this via localhost:8288
+    ports:
+      - "127.0.0.1:8288:8080"
+
+    networks:
+      - shade-internal
+
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    volumes:
+      # Mount migrations as read-only
+      - ./migrations:/usr/local/share/shade/migrations:ro
+      # Optional: Mount logs directory
+      - shade-logs:/var/lib/shade/logs
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Resource limits (adjust based on your needs)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:16-alpine
+    container_name: shade-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shade}
+      POSTGRES_USER: ${POSTGRES_USER:-shade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      # Performance tuning
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      # Shared buffers (25% of RAM recommended)
+      POSTGRES_SHARED_BUFFERS: "256MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "1GB"
+      POSTGRES_WORK_MEM: "16MB"
+
+    networks:
+      - shade-internal
+
+    volumes:
+      - shade-dbdata:/var/lib/postgresql/data
+      # Optional: Custom PostgreSQL config
+      # - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
+
+    # Only expose to host for direct admin access if needed
+    # Comment out if you don't need direct database access
+    ports:
+      - "127.0.0.1:5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shade} -d ${POSTGRES_DB:-shade}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: shade-redis
+    restart: unless-stopped
+
+    # Redis configuration
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-changeme}
+
+    networks:
+      - shade-internal
+
+    volumes:
+      - shade-redis:/data
+
+    # Only expose to host if needed for monitoring
+    # Comment out for better security
+    ports:
+      - "127.0.0.1:6379:6379"
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+    security_opt:
+      - no-new-privileges:true
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: PostgreSQL backup service
+  db-backup:
+    image: postgres:16-alpine
+    container_name: shade-db-backup
+    restart: "no"
+    profiles: ["backup"]
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shade}
+      POSTGRES_USER: ${POSTGRES_USER:-shade}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      BACKUP_DIR: /backups
+
+    networks:
+      - shade-internal
+
+    volumes:
+      - ./backups:/backups
+
+    entrypoint: /bin/sh
+    command: >
+      -c "pg_dump -h db -U $$POSTGRES_USER -d $$POSTGRES_DB > /backups/shade_$$(date +%Y%m%d_%H%M%S).sql"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  shade-dbdata:
+    driver: local
+    # Optional: Use a specific mount point
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /var/lib/shade/postgres
+
+  shade-redis:
+    driver: local
+
+  shade-logs:
+    driver: local
+
+# To run database backup manually:
+# docker-compose -f docker-compose.prod.yml --profile backup run --rm db-backup
+
+# To restore from backup:
+# docker-compose -f docker-compose.prod.yml exec -T db psql -U shade -d shade < backups/shade_20240101_120000.sql
