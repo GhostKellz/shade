@@ -362,18 +362,21 @@ async fn complete_provider_login(
 
         // Check if this is a CLI OAuth flow
         if stored_state.cli_mode.unwrap_or(false) {
-            // Store tokens for CLI polling
-            let tokens_key = format!("cli_tokens:{}", state_value);
+            // Store tokens back into the OAuth state for CLI polling
             let tokens_data = json!({
-                "access_token": token.access_token,
-                "refresh_token": token.refresh_token,
-                "id_token": token.id_token,
-                "user_email": user_info.email,
+                "provider": provider.get_provider_name(),
+                "cli_mode": true,
+                "tokens": {
+                    "access_token": token.access_token,
+                    "refresh_token": token.refresh_token,
+                    "id_token": token.id_token,
+                    "user_email": user_info.email,
+                }
             });
 
             state
                 .session_service
-                .set_session_data("global", &tokens_key, tokens_data)
+                .store_oauth_state(state_value, tokens_data, 600)
                 .await
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -570,21 +573,14 @@ pub async fn cli_poll(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let Some(_oauth_data) = oauth_data else {
+    let Some(oauth_value) = oauth_data else {
         return Ok(axum::Json(CliPollResponse::Error {
             message: "Invalid or expired state".to_string(),
         }));
     };
 
-    // Check if tokens are ready
-    let tokens_key = format!("cli_tokens:{}", query.state);
-    let tokens_data = state
-        .session_service
-        .get_session_data("global", &tokens_key)
-        .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if let Some(tokens_value) = tokens_data {
+    // Check if tokens are ready - they'll be in the oauth_value if complete
+    if let Some(tokens) = oauth_value.get("tokens") {
         // Tokens are ready!
         #[derive(serde::Deserialize)]
         struct TokenData {
@@ -594,12 +590,11 @@ pub async fn cli_poll(
             user_email: String,
         }
 
-        let token_data: TokenData = serde_json::from_value(tokens_value)
+        let token_data: TokenData = serde_json::from_value(tokens.clone())
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
         // Clean up the state
         let _ = state.session_service.delete_oauth_state(&query.state).await;
-        let _ = state.session_service.set_session_data("global", &tokens_key, json!(null)).await;
 
         return Ok(axum::Json(CliPollResponse::Success {
             access_token: token_data.access_token,
