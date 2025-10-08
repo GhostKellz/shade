@@ -6,9 +6,6 @@ COPY Cargo.toml ./
 COPY src ./src
 COPY migrations ./migrations
 
-# Install SQLx CLI for migrations
-RUN cargo install sqlx-cli --no-default-features --features postgres
-
 # Build the application
 RUN cargo build --release
 
@@ -29,7 +26,6 @@ RUN useradd -m -u 1000 shade
 # Copy the binary and migrations
 COPY --from=builder /usr/src/shade/target/release/shade /usr/local/bin/shade
 COPY --from=builder /usr/src/shade/migrations /usr/local/share/shade/migrations
-COPY --from=builder /usr/local/cargo/bin/sqlx /usr/local/bin/sqlx
 
 # Create directories and set permissions
 RUN mkdir -p /var/lib/shade && chown -R shade:shade /var/lib/shade
