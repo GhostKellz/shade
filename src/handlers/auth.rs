@@ -289,12 +289,26 @@ async fn complete_provider_login(
     let token = provider
         .exchange_code(&code)
         .await
-        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+        .map_err(|err| {
+            tracing::error!(
+                provider = provider.get_provider_name(),
+                error = ?err,
+                "OAuth token exchange failed"
+            );
+            StatusCode::BAD_GATEWAY
+        })?;
 
     let user_info = provider
         .get_user_info(&token.access_token)
         .await
-        .map_err(|_| StatusCode::BAD_GATEWAY)?;
+        .map_err(|err| {
+            tracing::error!(
+                provider = provider.get_provider_name(),
+                error = ?err,
+                "OAuth user info request failed"
+            );
+            StatusCode::BAD_GATEWAY
+        })?;
 
     let user = state
         .auth_service
