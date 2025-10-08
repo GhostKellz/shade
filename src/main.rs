@@ -133,6 +133,8 @@ async fn create_app(
         .route("/callback/google", get(auth_handlers::callback_google))
         .route("/callback/github", get(auth_handlers::callback_github))
         .route("/callback/entra", get(auth_handlers::callback_entra))
+        .route("/oauth/start", get(auth_handlers::oauth_start))
+        .route("/cli/poll", get(auth_handlers::cli_poll))
         .route("/admin", get(admin::dashboard))
         .route("/admin/*path", get(admin::serve_admin))
         .route(
