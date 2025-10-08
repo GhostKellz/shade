@@ -3,6 +3,7 @@ use crate::config::OAuthProvider as OAuthConfig;
 use reqwest::Client;
 use serde::Deserialize;
 use serde_urlencoded;
+use tracing::error;
 
 pub struct GoogleProvider {
     config: OAuthConfig,
@@ -21,7 +22,9 @@ struct GoogleTokenResponse {
 
 #[derive(Debug, Deserialize)]
 struct GoogleUserInfo {
-    sub: String,
+    sub: Option<String>,
+    #[serde(rename = "id")]
+    legacy_id: Option<String>,
     email: String,
     name: Option<String>,
     given_name: Option<String>,
@@ -111,24 +114,48 @@ impl OAuthProvider for GoogleProvider {
             .send()
             .await?;
 
-        if !response.status().is_success() {
-            let error_text = response.text().await?;
+        let status = response.status();
+        let body = response.text().await?;
+
+        if !status.is_success() {
             return Err(anyhow::anyhow!(
-                "Google userinfo request failed: {}",
-                error_text
+                "Google userinfo request failed (status {}): {}",
+                status,
+                body
             ));
         }
 
-        let google_user: GoogleUserInfo = response.json().await?;
+        let google_user: GoogleUserInfo = serde_json::from_str(&body).map_err(|err| {
+            error!(error = ?err, body = %body, "Failed to parse Google userinfo response");
+            anyhow::anyhow!("Failed to parse Google userinfo response: {}", err)
+        })?;
+
+        let GoogleUserInfo {
+            sub,
+            legacy_id,
+            email,
+            name,
+            given_name,
+            family_name,
+            picture,
+            email_verified,
+        } = google_user;
+
+        let user_id = sub
+            .or(legacy_id)
+            .ok_or_else(|| {
+                error!(body = %body, "Google userinfo response missing subject identifier");
+                anyhow::anyhow!("Google userinfo response missing subject identifier")
+            })?;
 
         Ok(UserInfo {
-            id: google_user.sub,
-            email: google_user.email,
-            name: google_user.name,
-            given_name: google_user.given_name,
-            family_name: google_user.family_name,
-            picture: google_user.picture,
-            email_verified: google_user.email_verified,
+            id: user_id,
+            email,
+            name,
+            given_name,
+            family_name,
+            picture,
+            email_verified,
         })
     }
 
