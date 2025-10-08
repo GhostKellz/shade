@@ -38,8 +38,7 @@ nano .env  # Update with secrets and OAuth credentials
 docker compose up -d --build
 
 # 5. Configure nginx
-sudo cp nginx-shade.conf /etc/nginx/sites-available/shade
-sudo ln -s /etc/nginx/sites-available/shade /etc/nginx/sites-enabled/
+sudo cp nginx-shade.conf /etc/nginx/conf.d/shade.conf
 sudo nginx -t
 sudo systemctl reload nginx
 
