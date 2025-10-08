@@ -52,7 +52,7 @@ This guide walks you through setting up OAuth applications for Google, GitHub, a
 4. Configure:
    - **Name**: Shade OAuth Client
    - **Authorized redirect URIs**:
-     - `http://localhost:8080/callback/google` (for local testing)
+  - `http://localhost:8083/callback/google` (for local testing)
      - `https://auth.yourdomain.com/callback/google` (for production)
 5. Click **Create**
 6. **Save the Client ID and Client Secret** - you'll need these for your `.env` file
@@ -62,7 +62,7 @@ This guide walks you through setting up OAuth applications for Google, GitHub, a
 ```bash
 OIDC_GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
 OIDC_GOOGLE_CLIENT_SECRET=your_client_secret_here
-OIDC_GOOGLE_REDIRECT_URI=http://localhost:8080/callback/google
+OIDC_GOOGLE_REDIRECT_URI=http://localhost:8083/callback/google
 ```
 
 ---
@@ -78,10 +78,10 @@ OIDC_GOOGLE_REDIRECT_URI=http://localhost:8080/callback/google
 3. Fill in the form:
    - **Application name**: Shade Identity Provider
    - **Homepage URL**:
-     - `http://localhost:8080` (for local testing)
+  - `http://localhost:8083` (for local testing)
      - `https://auth.yourdomain.com` (for production)
    - **Authorization callback URL**:
-     - `http://localhost:8080/callback/github` (for local testing)
+  - `http://localhost:8083/callback/github` (for local testing)
      - `https://auth.yourdomain.com/callback/github` (for production)
 4. Click **Register application**
 
@@ -95,7 +95,7 @@ OIDC_GOOGLE_REDIRECT_URI=http://localhost:8080/callback/google
 ```bash
 OIDC_GITHUB_CLIENT_ID=Iv1.your_client_id_here
 OIDC_GITHUB_CLIENT_SECRET=your_client_secret_here
-OIDC_GITHUB_REDIRECT_URI=http://localhost:8080/callback/github
+OIDC_GITHUB_REDIRECT_URI=http://localhost:8083/callback/github
 ```
 
 ---
@@ -116,7 +116,7 @@ OIDC_GITHUB_REDIRECT_URI=http://localhost:8080/callback/github
      - Or "Accounts in any organizational directory" (multi-tenant)
    - **Redirect URI**:
      - Platform: **Web**
-     - URI: `http://localhost:8080/callback/entra` (local)
+  - URI: `http://localhost:8083/callback/entra` (local)
      - URI: `https://auth.yourdomain.com/callback/entra` (production)
 5. Click **Register**
 
@@ -155,7 +155,7 @@ OIDC_GITHUB_REDIRECT_URI=http://localhost:8080/callback/github
 OIDC_ENTRA_TENANT_ID=your_tenant_id_here
 OIDC_ENTRA_CLIENT_ID=your_client_id_here
 OIDC_ENTRA_CLIENT_SECRET=your_client_secret_here
-OIDC_ENTRA_REDIRECT_URI=http://localhost:8080/callback/entra
+OIDC_ENTRA_REDIRECT_URI=http://localhost:8083/callback/entra
 ```
 
 ---
@@ -185,19 +185,19 @@ docker-compose logs -f shade
 ### 2. Test Each Provider
 
 #### Google OAuth Test
-1. Open browser to: `http://localhost:8080/login`
+1. Open browser to: `http://localhost:8083/login`
 2. Click "Sign in with Google" button
 3. Should redirect to Google consent screen
 4. After approval, redirects back to Shade
 
 #### GitHub OAuth Test
-1. Open browser to: `http://localhost:8080/login`
+1. Open browser to: `http://localhost:8083/login`
 2. Click "Sign in with GitHub" button
 3. Should redirect to GitHub authorization
 4. After approval, redirects back to Shade
 
 #### Entra OAuth Test
-1. Open browser to: `http://localhost:8080/login`
+1. Open browser to: `http://localhost:8083/login`
 2. Click "Sign in with Microsoft" button
 3. Should redirect to Microsoft login
 4. After approval, redirects back to Shade
@@ -213,10 +213,10 @@ docker-compose exec db psql -U shade -d shade -c "SELECT id, email, provider FRO
 
 ```bash
 # Check OIDC discovery
-curl http://localhost:8080/.well-known/openid-configuration | jq
+curl http://localhost:8083/.well-known/openid-configuration | jq
 
 # Check JWKS endpoint
-curl http://localhost:8080/jwks.json | jq
+curl http://localhost:8083/jwks.json | jq
 ```
 
 ---
@@ -229,7 +229,7 @@ Once Shade is running, configure your zeke tool to use Shade for authentication:
 {
   "auth": {
     "provider": "shade",
-    "oidc_url": "http://localhost:8080",
+  "oidc_url": "http://localhost:8083",
     "client_id": "zeke-cli",
     "scopes": ["openid", "email", "profile"]
   },
@@ -249,7 +249,7 @@ Configure omen to use Shade as the authentication layer:
 ```toml
 [auth]
 provider = "shade"
-oidc_issuer = "http://localhost:8080"
+oidc_issuer = "http://localhost:8083"
 client_id = "omen-gateway"
 client_secret = "your_omen_client_secret"
 

@@ -21,9 +21,9 @@ services:
       - .env.production
 
     # Only expose to localhost since nginx on host will proxy
-    # nginx on host can reach this via localhost:8288
+    # nginx on host can reach this via localhost:8083
     ports:
-      - "127.0.0.1:8288:8080"
+      - "127.0.0.1:8083:8083"
 
     networks:
       - shade-internal
@@ -41,7 +41,7 @@ services:
       - shade-logs:/var/lib/shade/logs
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -6,7 +6,7 @@ This directory contains the production deployment configuration for Shade on CKT
 
 **Domain:** auth.cktech.org
 **Nginx:** Running on host with wildcard cert at `/etc/nginx/certs/cktech.org/`
-**Container:** Exposed on `127.0.0.1:8288`
+**Container:** Exposed on `127.0.0.1:8083`
 **Deployment Path:** `/opt/shade`
 
 ## Files
@@ -43,7 +43,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 # 6. Test
-curl http://127.0.0.1:8288/health
+curl http://127.0.0.1:8083/health
 curl https://auth.cktech.org/health
 ```
 
@@ -80,7 +80,7 @@ Using wildcard certificate at:
 
 ## Security
 
-- Container only exposed to localhost (127.0.0.1:8288)
+- Container only exposed to localhost (127.0.0.1:8083)
 - Nginx handles SSL termination
 - Database and Redis only accessible via Docker network
 - All secrets in `.env` (not tracked by git)

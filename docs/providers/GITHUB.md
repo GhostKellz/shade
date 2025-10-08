@@ -54,7 +54,7 @@ This guide walks you through setting up GitHub as an authentication provider for
    - **Homepage URL**: Update if needed for your production domain
    - **Authorization callback URL**: Add multiple URLs if you have different environments:
      - `https://auth.example.com/callback/github` (production)
-     - `http://localhost:8080/callback/github` (development)
+   - `http://localhost:8083/callback/github` (development)
      - `https://staging.example.com/callback/github` (staging)
 
 3. **Advanced Settings**

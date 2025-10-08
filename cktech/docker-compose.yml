@@ -22,9 +22,9 @@ services:
     env_file:
       - .env
 
-    # Expose only to localhost:8288 for nginx proxy
+    # Expose only to localhost:8083 for nginx proxy
     ports:
-      - "127.0.0.1:8288:8080"
+      - "127.0.0.1:8083:8083"
 
     networks:
       - shade-internal
@@ -42,7 +42,7 @@ services:
       - shade-logs:/var/lib/shade/logs
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
       interval: 30s
       timeout: 10s
       retries: 3

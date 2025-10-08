@@ -15,15 +15,15 @@ Before starting Shade, you need to set up OAuth applications. Follow the detaile
 
 1. **Google OAuth** (for Claude Max):
    - Create OAuth client at [Google Cloud Console](https://console.cloud.google.com/)
-   - Add redirect URI: `http://localhost:8080/callback/google`
+  - Add redirect URI: `http://localhost:8083/callback/google`
 
 2. **GitHub OAuth** (for Copilot Pro):
    - Create OAuth app at [GitHub Developer Settings](https://github.com/settings/developers)
-   - Add callback URL: `http://localhost:8080/callback/github`
+  - Add callback URL: `http://localhost:8083/callback/github`
 
 3. **Microsoft Entra** (for M365 - optional):
    - Register app at [Azure Portal](https://portal.azure.com/)
-   - Add redirect URI: `http://localhost:8080/callback/entra`
+  - Add redirect URI: `http://localhost:8083/callback/entra`
 
 ## Step 2: Update .env File
 
@@ -66,10 +66,10 @@ docker-compose logs -f shade
 
 You should see output like:
 ```
-shade | Starting Shade Identity Provider on 0.0.0.0:8080
-shade | Listening on 0.0.0.0:8080
-shade | OIDC Issuer: http://localhost:8080
-shade | Admin UI: http://localhost:8080/admin
+shade | Starting Shade Identity Provider on 0.0.0.0:8083
+shade | Listening on 0.0.0.0:8083
+shade | OIDC Issuer: http://localhost:8083
+shade | Admin UI: http://localhost:8083/admin
 ```
 
 ## Step 4: Verify Services
@@ -79,16 +79,16 @@ shade | Admin UI: http://localhost:8080/admin
 docker-compose ps
 
 # Should show:
-# shade         Up      0.0.0.0:8080->8080/tcp
+# shade         Up      0.0.0.0:8083->8083/tcp
 # shade-db      Up      0.0.0.0:5432->5432/tcp
 # shade-redis   Up      0.0.0.0:6379->6379/tcp
 
 # Test health endpoint
-curl http://localhost:8080/health
+curl http://localhost:8083/health
 # Should return: OK
 
 # Test OIDC discovery
-curl http://localhost:8080/.well-known/openid-configuration | jq
+curl http://localhost:8083/.well-known/openid-configuration | jq
 ```
 
 ## Step 5: Test OAuth Login
@@ -96,10 +96,10 @@ curl http://localhost:8080/.well-known/openid-configuration | jq
 ### Test Google OAuth
 ```bash
 # Open in browser
-open http://localhost:8080/login
+open http://localhost:8083/login
 
 # Or manually navigate to the Google OAuth URL
-curl -v "http://localhost:8080/authorize?client_id=test&response_type=code&scope=openid&redirect_uri=http://localhost:8080/callback&state=test123"
+curl -v "http://localhost:8083/authorize?client_id=test&response_type=code&scope=openid&redirect_uri=http://localhost:8083/callback&state=test123"
 ```
 
 The flow:
@@ -115,7 +115,7 @@ Same process but click "Sign in with GitHub" instead.
 ## Step 6: Access Admin Interface
 
 ```bash
-open http://localhost:8080/admin
+open http://localhost:8083/admin
 ```
 
 Login with default credentials:
@@ -147,7 +147,7 @@ Edit `~/.config/zeke/config.json`:
 {
   "auth": {
     "type": "oauth",
-    "provider_url": "http://localhost:8080",
+  "provider_url": "http://localhost:8083",
     "client_id": "zeke-cli"
   },
   "ai": {
@@ -166,7 +166,7 @@ Edit `~/.config/zeke/config.json`:
 ### Option 2: Set Environment Variables
 
 ```bash
-export ZEKE_AUTH_PROVIDER=http://localhost:8080
+export ZEKE_AUTH_PROVIDER=http://localhost:8083
 export ZEKE_OAUTH_CLIENT_ID=zeke-cli
 export ZEKE_USE_CLAUDE_MAX=true
 export ZEKE_USE_COPILOT_PRO=true
@@ -202,7 +202,7 @@ INSERT INTO oauth_clients (
 
 Then in zeke:
 ```bash
-zeke auth login --provider shade --url http://localhost:8080
+zeke auth login --provider shade --url http://localhost:8083
 ```
 
 ## Integration with Omen
@@ -218,8 +218,8 @@ port = 3000
 
 [auth]
 provider = "shade"
-issuer_url = "http://localhost:8080"
-jwks_url = "http://localhost:8080/jwks.json"
+issuer_url = "http://localhost:8083"
+jwks_url = "http://localhost:8083/jwks.json"
 required_scopes = ["openid", "email"]
 
 # Route AI providers through authenticated users
@@ -269,7 +269,7 @@ docker-compose exec shade sqlx migrate info --database-url postgres://shade:shad
 openssl rand -base64 48
 
 # Test token endpoint
-curl -X POST http://localhost:8080/token \
+curl -X POST http://localhost:8083/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=authorization_code&code=...&client_id=...&redirect_uri=..."
 ```
@@ -303,8 +303,8 @@ docker-compose exec redis redis-cli ping
 ### Problem: OAuth redirect mismatch
 
 Make sure redirect URIs match exactly:
-- In `.env`: `http://localhost:8080/callback/google`
-- In Google Console: `http://localhost:8080/callback/google`
+- In `.env`: `http://localhost:8083/callback/google`
+- In Google Console: `http://localhost:8083/callback/google`
 
 No trailing slashes, exact match!
 
@@ -338,7 +338,7 @@ docker-compose exec redis redis-cli KEYS '*'
    - Set up reverse proxy (Nginx/Traefik)
 
 3. **Set up monitoring**
-   - Configure Prometheus scraping: `http://localhost:8080/metrics`
+  - Configure Prometheus scraping: `http://localhost:8083/metrics`
    - Set up Grafana dashboards
    - Configure audit log collection
 

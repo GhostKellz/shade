@@ -117,7 +117,7 @@ echo "  - Build Shade Docker image"
 echo "  - Start PostgreSQL database"
 echo "  - Start Redis cache"
 echo "  - Start Shade service"
-echo "  - Expose Shade on 127.0.0.1:8288 for nginx proxy"
+echo "  - Expose Shade on 127.0.0.1:8083 for nginx proxy"
 echo
 read -p "Continue with deployment? (y/N) " -n 1 -r
 echo
@@ -156,7 +156,7 @@ fi
 
 # Check Shade
 sleep 5
-if curl -sf http://127.0.0.1:8288/health > /dev/null 2>&1; then
+if curl -sf http://127.0.0.1:8083/health > /dev/null 2>&1; then
     echo "✅ Shade is healthy"
 else
     echo "⚠️  Shade is not responding yet (this may be normal on first start)"
@@ -173,7 +173,7 @@ ISSUER=$(grep SHADE_ISSUER .env.production | cut -d= -f2)
 ADMIN_EMAIL=$(grep SHADE_ADMIN_EMAIL .env.production | cut -d= -f2)
 
 echo "📍 Service Information:"
-echo "   - Internal:  http://127.0.0.1:8288"
+echo "   - Internal:  http://127.0.0.1:8083"
 echo "   - Public:    $ISSUER"
 echo "   - Admin UI:  $ISSUER/admin"
 echo "   - OIDC:      $ISSUER/.well-known/openid-configuration"
@@ -184,7 +184,7 @@ echo "   - Password:  (check .env.production)"
 echo
 echo "📋 Next Steps:"
 echo "   1. Configure nginx (see nginx/shade.conf)"
-echo "   2. Test: curl http://127.0.0.1:8288/health"
+echo "   2. Test: curl http://127.0.0.1:8083/health"
 echo "   3. Test: curl $ISSUER/health"
 echo "   4. Access admin UI and change password"
 echo "   5. Test OAuth flows"

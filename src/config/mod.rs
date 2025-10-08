@@ -78,7 +78,7 @@ impl Config {
             server: ServerConfig {
                 host: env::var("SHADE_HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
                 port: env::var("SHADE_PORT")
-                    .unwrap_or_else(|_| "8080".to_string())
+                    .unwrap_or_else(|_| "8083".to_string())
                     .parse()?,
                 issuer: env::var("SHADE_ISSUER")?,
                 external_url: env::var("SHADE_EXTERNAL_URL")

@@ -37,13 +37,13 @@ WORKDIR /var/lib/shade
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:8083/health || exit 1
 
-EXPOSE 8080
+EXPOSE 8083
 
 # Set default environment variables
 ENV RUST_LOG=shade=info,tower_http=info
 ENV SHADE_HOST=0.0.0.0
-ENV SHADE_PORT=8080
+ENV SHADE_PORT=8083
 
 CMD ["shade"]

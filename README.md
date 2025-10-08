@@ -111,7 +111,7 @@ docker-compose up -d
 
 ### 4. Access Admin Interface
 
-Open http://localhost:8080/admin and sign in with:
+Open http://localhost:8083/admin and sign in with:
 - **Email**: `admin@example.com` 
 - **Password**: `ChangeMe!Long1`
 
@@ -127,8 +127,8 @@ services:
     environment:
       # Core Configuration
       - RUST_LOG=info
-      - SHADE_ISSUER=https://auth.localhost:8080
-      - SHADE_EXTERNAL_URL=https://auth.localhost:8080
+  - SHADE_ISSUER=https://auth.localhost:8083
+  - SHADE_EXTERNAL_URL=https://auth.localhost:8083
       - SHADE_COOKIE_SECRET=base64:your_generated_secret_here
       
       # Database & Cache
@@ -143,12 +143,12 @@ services:
       # See docs/providers/ for detailed setup guides
       
     ports:
-      - "8080:8080"
+      - "8083:8083"
     depends_on:
       - db
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -276,7 +276,7 @@ Shade implements enterprise-grade security from the ground up:
 # Forward-auth endpoint (internal)
 location = /_shade_auth {
   internal;
-  proxy_pass              http://127.0.0.1:8080/forward-auth;
+  proxy_pass              http://127.0.0.1:8083/forward-auth;
   proxy_set_header        Host $host;
   proxy_set_header        X-Original-URI $request_uri;
   proxy_set_header        X-Real-IP $remote_addr;
@@ -390,10 +390,10 @@ make migrate
 make dev-watch
 ```
 
-Development server runs on `http://127.0.0.1:8080` with:
-- Admin interface: `http://127.0.0.1:8080/admin`
-- OIDC discovery: `http://127.0.0.1:8080/.well-known/openid-configuration`
-- Health check: `http://127.0.0.1:8080/health`
+Development server runs on `http://127.0.0.1:8083` with:
+- Admin interface: `http://127.0.0.1:8083/admin`
+- OIDC discovery: `http://127.0.0.1:8083/.well-known/openid-configuration`
+- Health check: `http://127.0.0.1:8083/health`
 
 ### Available Make Targets
 

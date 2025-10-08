@@ -88,7 +88,7 @@ cp .env.example .env
 docker-compose up -d
 ```
 
-4. Access the admin interface at `http://localhost:8080/admin`
+4. Access the admin interface at `http://localhost:8083/admin`
 
 ### Manual Installation
 
@@ -130,7 +130,7 @@ make dev
 | `SHADE_ISSUER` | Public issuer URL | Required |
 | `SHADE_EXTERNAL_URL` | External facing URL | Same as issuer |
 | `SHADE_HOST` | Bind host | `0.0.0.0` |
-| `SHADE_PORT` | Bind port | `8080` |
+| `SHADE_PORT` | Bind port | `8083` |
 | `SHADE_COOKIE_SECRET` | Base64 encoded cookie secret (32+ bytes) | Required |
 | `SHADE_JWT_SIGNING_ALG` | JWT signing algorithm | `RS256` |
 | `DATABASE_URL` | PostgreSQL connection string | Required |
@@ -348,7 +348,7 @@ Shade supports forward authentication for reverse proxies like Nginx and Traefik
 # Forward-auth endpoint
 location = /_shade_auth {
   internal;
-  proxy_pass              http://shade:8080/forward-auth;
+  proxy_pass              http://shade:8083/forward-auth;
   proxy_set_header        Host $host;
   proxy_set_header        X-Original-URI $request_uri;
   proxy_set_header        X-Real-IP $remote_addr;
@@ -383,7 +383,7 @@ http:
   middlewares:
     shade-auth:
       forwardAuth:
-        address: http://shade:8080/forward-auth
+  address: http://shade:8083/forward-auth
         authResponseHeaders:
           - X-User
           - X-Email  
@@ -475,12 +475,12 @@ services:
       - DATABASE_URL=postgres://shade:secure_password@db/shade
       - REDIS_URL=redis://redis:6379
     ports:
-      - "8080:8080"
+      - "8083:8083"
     depends_on:
       - db
       - redis
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+  test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -535,7 +535,7 @@ spec:
       - name: shade
         image: ghcr.io/your-org/shade:latest
         ports:
-        - containerPort: 8080
+  - containerPort: 8083
         env:
         - name: SHADE_ISSUER
           value: "https://auth.example.com"
@@ -554,13 +554,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8083
           initialDelaySeconds: 30
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /health
-            port: 8080
+            port: 8083
           initialDelaySeconds: 5
           periodSeconds: 5
 ---
@@ -572,8 +572,8 @@ spec:
   selector:
     app: shade
   ports:
-  - port: 8080
-    targetPort: 8080
+  - port: 8083
+    targetPort: 8083
 ```
 
 ### Environment Considerations
@@ -797,19 +797,19 @@ export RUST_LOG=shade=debug,tower_http=debug
 
 Check application health:
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8083/health
 ```
 
 Check OIDC configuration:
 ```bash
-curl http://localhost:8080/.well-known/openid-configuration | jq
+curl http://localhost:8083/.well-known/openid-configuration | jq
 ```
 
 ### Performance Issues
 
 Monitor metrics:
 ```bash
-curl http://localhost:8080/metrics
+curl http://localhost:8083/metrics
 ```
 
 Check database performance:

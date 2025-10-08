@@ -95,13 +95,13 @@ Note: Google+ API is deprecated but may still be required for some OAuth flows. 
 
 3. **Configure Authorized Origins** (optional but recommended)
    - Add origins that can make OAuth requests:
-     - `https://your-shade-domain.com`
-     - `http://localhost:8080` (for development)
+   - `https://your-shade-domain.com`
+   - `http://localhost:8083` (for development)
 
 4. **Configure Authorized Redirect URIs**
    - Add the callback URLs for your Shade instance:
-     - `https://your-shade-domain.com/callback/google` (production)
-     - `http://localhost:8080/callback/google` (development)
+   - `https://your-shade-domain.com/callback/google` (production)
+   - `http://localhost:8083/callback/google` (development)
    - Click "Create"
 
 5. **Download Credentials**

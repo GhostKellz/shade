@@ -7,8 +7,8 @@ services:
     environment:
       # Core configuration
       - RUST_LOG=info
-      - SHADE_ISSUER=https://auth.localhost:8080
-      - SHADE_EXTERNAL_URL=https://auth.localhost:8080
+  - "SHADE_ISSUER=https://auth.localhost:8083"
+  - "SHADE_EXTERNAL_URL=https://auth.localhost:8083"
       - SHADE_COOKIE_SECRET=base64:dGhpc19pc19hX3Zlcnlfc2VjdXJlX2Nvb2tpZV9zZWNyZXRfdGhhdF9pc19sb25nX2Vub3VnaA==
       - SHADE_JWT_SIGNING_ALG=RS256
       
@@ -27,21 +27,21 @@ services:
       # Google
       # - OIDC_GOOGLE_CLIENT_ID=your_google_client_id
       # - OIDC_GOOGLE_CLIENT_SECRET=your_google_client_secret
-      # - OIDC_GOOGLE_REDIRECT_URI=https://auth.localhost:8080/callback/google
+  # - OIDC_GOOGLE_REDIRECT_URI=https://auth.localhost:8083/callback/google
 
       # GitHub
       # - OIDC_GITHUB_CLIENT_ID=your_github_client_id
       # - OIDC_GITHUB_CLIENT_SECRET=your_github_client_secret
-      # - OIDC_GITHUB_REDIRECT_URI=https://auth.localhost:8080/callback/github
+  # - OIDC_GITHUB_REDIRECT_URI=https://auth.localhost:8083/callback/github
 
       # Microsoft Entra (Azure AD)
       # - OIDC_ENTRA_TENANT_ID=your_tenant_id
       # - OIDC_ENTRA_CLIENT_ID=your_entra_client_id
       # - OIDC_ENTRA_CLIENT_SECRET=your_entra_client_secret
-      # - OIDC_ENTRA_REDIRECT_URI=https://auth.localhost:8080/callback/entra
+  # - OIDC_ENTRA_REDIRECT_URI=https://auth.localhost:8083/callback/entra
 
     ports:
-      - "8080:8080"
+      - "8083:8083"
     depends_on:
       - db
       - redis

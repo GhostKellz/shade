@@ -112,7 +112,7 @@ else
 fi
 
 # Check Shade
-if curl -f http://localhost:8080/health > /dev/null 2>&1; then
+if curl -f http://localhost:8083/health > /dev/null 2>&1; then
     echo "✅ Shade is ready"
 else
     echo "⚠️  Shade is not ready yet (this is normal on first start)"
@@ -124,10 +124,10 @@ echo "=========================================="
 echo "🎉 Shade is starting up!"
 echo
 echo "📍 Services:"
-echo "   - Shade:      http://localhost:8080"
-echo "   - Admin UI:   http://localhost:8080/admin"
-echo "   - OIDC:       http://localhost:8080/.well-known/openid-configuration"
-echo "   - Health:     http://localhost:8080/health"
+echo "   - Shade:      http://localhost:8083"
+echo "   - Admin UI:   http://localhost:8083/admin"
+echo "   - OIDC:       http://localhost:8083/.well-known/openid-configuration"
+echo "   - Health:     http://localhost:8083/health"
 echo
 echo "👤 Default admin credentials:"
 echo "   - Email:    ${SHADE_ADMIN_EMAIL:-admin@example.com}"

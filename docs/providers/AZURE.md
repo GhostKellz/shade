@@ -42,7 +42,7 @@ This guide walks you through setting up Microsoft Entra ID (formerly Azure AD) a
    - Click "Authentication" in the left menu
    - Under "Redirect URIs", add any additional URLs:
      - `https://auth.example.com/callback/entra` (production)
-     - `http://localhost:8080/callback/entra` (development)
+   - `http://localhost:8083/callback/entra` (development)
 
 3. **Configure Token Settings**
    - In the "Authentication" section, under "Implicit grant and hybrid flows":

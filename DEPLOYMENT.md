@@ -5,7 +5,7 @@ Deploy Shade on a server with nginx as reverse proxy.
 ## Architecture
 
 ```
-Internet → nginx (host) → Shade container (127.0.0.1:8080)
+Internet → nginx (host) → Shade container (127.0.0.1:8083)
                               ↓
                          PostgreSQL container
                               ↓
@@ -196,7 +196,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml logs -f shade
 
 # You should see:
-# shade | Starting Shade Identity Provider on 0.0.0.0:8080
+# shade | Starting Shade Identity Provider on 0.0.0.0:8083
 # shade | OIDC Issuer: https://auth.yourdomain.com
 ```
 
@@ -214,7 +214,7 @@ docker compose -f docker-compose.prod.yml ps
 # shade-redis   Up (healthy)
 
 # Test health endpoint
-curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8083/health
 # Should return: OK
 
 # Test via nginx (public)
@@ -251,7 +251,7 @@ curl https://auth.yourdomain.com/.well-known/openid-configuration | jq
 
 ```bash
 # Metrics available at (localhost only)
-curl http://127.0.0.1:8080/metrics
+curl http://127.0.0.1:8083/metrics
 
 # Or configure nginx to allow from monitoring server
 # (see nginx config - /metrics location block)
@@ -465,7 +465,7 @@ docker compose -f docker-compose.prod.yml start shade
 docker compose -f docker-compose.prod.yml logs shade
 
 # Check if port is already in use
-sudo netstat -tulpn | grep 8080
+sudo netstat -tulpn | grep 8083
 
 # Rebuild from scratch
 docker compose -f docker-compose.prod.yml down -v
