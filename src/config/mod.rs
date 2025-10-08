@@ -136,7 +136,7 @@ impl Config {
         let client_id = env::var("OIDC_GOOGLE_CLIENT_ID").ok()?;
         let client_secret = env::var("OIDC_GOOGLE_CLIENT_SECRET").ok()?;
         let redirect_uri = env::var("OIDC_GOOGLE_REDIRECT_URI").ok()?;
-        
+
         Some(OAuthProvider {
             client_id,
             client_secret,
@@ -148,7 +148,7 @@ impl Config {
         let client_id = env::var("OIDC_GITHUB_CLIENT_ID").ok()?;
         let client_secret = env::var("OIDC_GITHUB_CLIENT_SECRET").ok()?;
         let redirect_uri = env::var("OIDC_GITHUB_REDIRECT_URI").ok()?;
-        
+
         Some(OAuthProvider {
             client_id,
             client_secret,
@@ -161,7 +161,7 @@ impl Config {
         let client_id = env::var("OIDC_ENTRA_CLIENT_ID").ok()?;
         let client_secret = env::var("OIDC_ENTRA_CLIENT_SECRET").ok()?;
         let redirect_uri = env::var("OIDC_ENTRA_REDIRECT_URI").ok()?;
-        
+
         Some(EntraProvider {
             tenant_id,
             client_id,

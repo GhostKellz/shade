@@ -1,7 +1,7 @@
 use super::{OAuthProvider, TokenResponse, UserInfo};
 use crate::config::OAuthProvider as OAuthConfig;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_urlencoded;
 
 pub struct GitHubProvider {
@@ -54,7 +54,7 @@ impl GitHubProvider {
         }
 
         let emails: Vec<GitHubEmail> = response.json().await?;
-        
+
         if let Some(primary_email) = emails.iter().find(|e| e.primary) {
             return Ok((primary_email.email.clone(), primary_email.verified));
         }
@@ -79,8 +79,8 @@ impl OAuthProvider for GitHubProvider {
             ("state", state),
         ];
 
-        let query_string = serde_urlencoded::to_string(params)
-            .expect("Failed to serialize query parameters");
+        let query_string =
+            serde_urlencoded::to_string(params).expect("Failed to serialize query parameters");
 
         format!("https://github.com/login/oauth/authorize?{}", query_string)
     }
@@ -103,7 +103,10 @@ impl OAuthProvider for GitHubProvider {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            return Err(anyhow::anyhow!("GitHub token exchange failed: {}", error_text));
+            return Err(anyhow::anyhow!(
+                "GitHub token exchange failed: {}",
+                error_text
+            ));
         }
 
         let github_response: GitHubTokenResponse = response.json().await?;
@@ -129,7 +132,10 @@ impl OAuthProvider for GitHubProvider {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            return Err(anyhow::anyhow!("GitHub userinfo request failed: {}", error_text));
+            return Err(anyhow::anyhow!(
+                "GitHub userinfo request failed: {}",
+                error_text
+            ));
         }
 
         let github_user: GitHubUserInfo = response.json().await?;

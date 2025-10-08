@@ -1,13 +1,11 @@
-use jsonwebtoken::{encode, decode, Header, Algorithm, Validation, EncodingKey, DecodingKey};
+use base64::{engine::general_purpose, Engine as _};
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
-use ring::signature::{RsaKeyPair, KeyPair};
-use ring::rand::SystemRandom;
-use base64::{Engine as _, engine::general_purpose};
-use std::collections::HashMap;
+
 use crate::config::AuthConfig;
-use crate::models::{User, JwkSet, Jwk};
+use crate::models::{Jwk, JwkSet, User};
 
 #[derive(Clone)]
 pub struct JwtService {
@@ -28,7 +26,7 @@ pub struct Claims {
     pub nbf: i64,
     pub jti: String,
     pub scope: String,
-    
+
     pub email: Option<String>,
     pub email_verified: Option<bool>,
     pub name: Option<String>,
@@ -36,7 +34,7 @@ pub struct Claims {
     pub family_name: Option<String>,
     pub picture: Option<String>,
     pub updated_at: Option<i64>,
-    
+
     pub nonce: Option<String>,
     pub at_hash: Option<String>,
     pub c_hash: Option<String>,
@@ -64,11 +62,16 @@ impl JwtService {
         };
 
         let key_id = Uuid::new_v4().to_string();
-        
-        let (encoding_key, decoding_key, public_key_pem) = if matches!(algorithm, Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512) {
+
+        let (encoding_key, decoding_key, public_key_pem) = if matches!(
+            algorithm,
+            Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512
+        ) {
             Self::generate_rsa_keys()?
         } else {
-            return Err(anyhow::anyhow!("Only RSA algorithms are currently supported"));
+            return Err(anyhow::anyhow!(
+                "Only RSA algorithms are currently supported"
+            ));
         };
 
         Ok(Self {
@@ -81,9 +84,9 @@ impl JwtService {
     }
 
     fn generate_rsa_keys() -> anyhow::Result<(EncodingKey, DecodingKey, String)> {
-        use rsa::{RsaPrivateKey, RsaPublicKey};
-        use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
         use rand::rngs::OsRng;
+        use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
+        use rsa::{RsaPrivateKey, RsaPublicKey};
 
         // Generate RSA key pair
         let mut rng = OsRng;
@@ -92,9 +95,11 @@ impl JwtService {
         let public_key = RsaPublicKey::from(&private_key);
 
         // Encode keys to PEM
-        let private_pem = private_key.to_pkcs8_pem(Default::default())
+        let private_pem = private_key
+            .to_pkcs8_pem(Default::default())
             .map_err(|e| anyhow::anyhow!("Failed to encode private key: {}", e))?;
-        let public_pem = public_key.to_public_key_pem(Default::default())
+        let public_pem = public_key
+            .to_public_key_pem(Default::default())
             .map_err(|e| anyhow::anyhow!("Failed to encode public key: {}", e))?;
 
         // Create encoding/decoding keys for JWT
@@ -125,7 +130,7 @@ impl JwtService {
             nbf: now.timestamp(),
             jti: Uuid::new_v4().to_string(),
             scope: scopes.join(" "),
-            
+
             email: Some(user.email.clone()),
             email_verified: Some(user.email_verified),
             name: Some(user.full_name()),
@@ -133,7 +138,7 @@ impl JwtService {
             family_name: user.family_name.clone(),
             picture: user.picture.clone(),
             updated_at: Some(user.updated_at.timestamp()),
-            
+
             nonce: nonce.map(|n| n.to_string()),
             at_hash: None,
             c_hash: None,
@@ -180,7 +185,7 @@ impl JwtService {
             nbf: now.timestamp(),
             jti: Uuid::new_v4().to_string(),
             scope: "openid".to_string(),
-            
+
             email: Some(user.email.clone()),
             email_verified: Some(user.email_verified),
             name: Some(user.full_name()),
@@ -188,7 +193,7 @@ impl JwtService {
             family_name: user.family_name.clone(),
             picture: user.picture.clone(),
             updated_at: Some(user.updated_at.timestamp()),
-            
+
             nonce: nonce.map(|n| n.to_string()),
             at_hash,
             c_hash,
@@ -202,12 +207,12 @@ impl JwtService {
     }
 
     fn create_hash(input: &str) -> anyhow::Result<String> {
-        use sha2::{Sha256, Digest};
-        
+        use sha2::{Digest, Sha256};
+
         let mut hasher = Sha256::new();
         hasher.update(input.as_bytes());
         let hash = hasher.finalize();
-        
+
         let half_hash = &hash[0..16];
         Ok(general_purpose::URL_SAFE_NO_PAD.encode(half_hash))
     }
@@ -216,7 +221,7 @@ impl JwtService {
         let mut validation = Validation::new(self.algorithm);
         validation.set_audience(&[audience]);
         validation.validate_exp = true;
-        
+
         let token_data = decode::<Claims>(token, &self.decoding_key, &validation)?;
         Ok(token_data.claims)
     }
@@ -225,33 +230,35 @@ impl JwtService {
         let mut jwk = self.extract_jwk_from_public_key()?;
         jwk.kid = self.key_id.clone();
         jwk.use_ = Some("sig".to_string());
-        jwk.alg = Some(match self.algorithm {
-            Algorithm::RS256 => "RS256",
-            Algorithm::RS384 => "RS384",
-            Algorithm::RS512 => "RS512",
-            Algorithm::ES256 => "ES256",
-            Algorithm::ES384 => "ES384",
-            Algorithm::HS256 => "HS256",
-            Algorithm::HS384 => "HS384",
-            Algorithm::HS512 => "HS512",
-            _ => "RS256",
-        }.to_string());
+        jwk.alg = Some(
+            match self.algorithm {
+                Algorithm::RS256 => "RS256",
+                Algorithm::RS384 => "RS384",
+                Algorithm::RS512 => "RS512",
+                Algorithm::ES256 => "ES256",
+                Algorithm::ES384 => "ES384",
+                Algorithm::HS256 => "HS256",
+                Algorithm::HS384 => "HS384",
+                Algorithm::HS512 => "HS512",
+                _ => "RS256",
+            }
+            .to_string(),
+        );
 
-        Ok(JwkSet {
-            keys: vec![jwk],
-        })
+        Ok(JwkSet { keys: vec![jwk] })
     }
 
     fn extract_jwk_from_public_key(&self) -> anyhow::Result<Jwk> {
-        let public_key = self.public_key_pem
+        let public_key = self
+            .public_key_pem
             .replace("-----BEGIN PUBLIC KEY-----", "")
             .replace("-----END PUBLIC KEY-----", "")
             .replace('\n', "");
-        
+
         let der_bytes = general_purpose::STANDARD.decode(&public_key)?;
-        
+
         let (n, e) = Self::extract_rsa_components(&der_bytes)?;
-        
+
         Ok(Jwk {
             kty: "RSA".to_string(),
             kid: self.key_id.clone(),
@@ -264,9 +271,9 @@ impl JwtService {
 
     fn extract_rsa_components(der_bytes: &[u8]) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
         // Use rsa crate to parse DER-encoded public key
-        use rsa::RsaPublicKey;
         use rsa::pkcs8::DecodePublicKey;
         use rsa::traits::PublicKeyParts;
+        use rsa::RsaPublicKey;
 
         let public_key = RsaPublicKey::from_public_key_der(der_bytes)
             .map_err(|e| anyhow::anyhow!("Failed to parse RSA public key: {}", e))?;

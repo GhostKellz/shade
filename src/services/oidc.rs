@@ -1,12 +1,13 @@
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::{Duration, Utc};
-use sha2::{Digest, Sha256};
-use base64::{Engine as _, engine::general_purpose};
 use crate::config::Config;
-use crate::models::{User, OAuthClient, AuthorizationCode, RefreshToken, AccessToken};
+use crate::models::scope::STANDARD_SCOPES;
+use crate::models::{AccessToken, AuthorizationCode, RefreshToken, User};
 use crate::services::jwt::{JwtService, TokenResponse};
+use base64::{engine::general_purpose, Engine as _};
+use chrono::{Duration, Utc};
 use rand::{thread_rng, Rng};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct OidcService {
@@ -86,11 +87,19 @@ pub struct OpenIdConfiguration {
 
 impl OidcService {
     pub fn new(config: Config, jwt_service: JwtService) -> Self {
-        Self { config, jwt_service }
+        Self {
+            config,
+            jwt_service,
+        }
     }
 
     pub fn get_openid_configuration(&self) -> OpenIdConfiguration {
         let base_url = &self.config.server.issuer;
+
+        let scopes_supported = STANDARD_SCOPES
+            .iter()
+            .map(|(scope, _)| scope.to_string())
+            .collect();
 
         OpenIdConfiguration {
             issuer: base_url.clone(),
@@ -98,12 +107,7 @@ impl OidcService {
             token_endpoint: format!("{}/token", base_url),
             userinfo_endpoint: format!("{}/userinfo", base_url),
             jwks_uri: format!("{}/jwks.json", base_url),
-            scopes_supported: vec![
-                "openid".to_string(),
-                "profile".to_string(),
-                "email".to_string(),
-                "offline_access".to_string(),
-            ],
+            scopes_supported,
             response_types_supported: vec![
                 "code".to_string(),
                 "id_token".to_string(),
@@ -150,10 +154,7 @@ impl OidcService {
                 "family_name".to_string(),
                 "picture".to_string(),
             ],
-            code_challenge_methods_supported: vec![
-                "plain".to_string(),
-                "S256".to_string(),
-            ],
+            code_challenge_methods_supported: vec!["plain".to_string(), "S256".to_string()],
             introspection_endpoint: format!("{}/introspect", base_url),
             revocation_endpoint: format!("{}/revoke", base_url),
             end_session_endpoint: format!("{}/logout", base_url),
@@ -233,11 +234,12 @@ impl OidcService {
             None
         };
 
-        let refresh_token = if include_refresh_token && scopes.contains(&"offline_access".to_string()) {
-            Some(Self::generate_random_string(64))
-        } else {
-            None
-        };
+        let refresh_token =
+            if include_refresh_token && scopes.contains(&"offline_access".to_string()) {
+                Some(Self::generate_random_string(64))
+            } else {
+                None
+            };
 
         Ok(TokenResponse {
             access_token,
@@ -289,7 +291,11 @@ impl OidcService {
         }
     }
 
-    pub fn introspect_token(&self, token: &str, client_id: &str) -> anyhow::Result<IntrospectResponse> {
+    pub fn introspect_token(
+        &self,
+        token: &str,
+        client_id: &str,
+    ) -> anyhow::Result<IntrospectResponse> {
         match self.jwt_service.verify_token(token, client_id) {
             Ok(claims) => Ok(IntrospectResponse {
                 active: claims.exp > Utc::now().timestamp(),
@@ -322,7 +328,11 @@ impl OidcService {
         }
     }
 
-    pub fn validate_scopes(&self, requested_scopes: &str, allowed_scopes: &[String]) -> Vec<String> {
+    pub fn validate_scopes(
+        &self,
+        requested_scopes: &str,
+        allowed_scopes: &[String],
+    ) -> Vec<String> {
         let requested: Vec<&str> = requested_scopes.split_whitespace().collect();
         let mut validated = Vec::new();
 
@@ -340,7 +350,8 @@ impl OidcService {
     }
 
     fn generate_random_string(length: usize) -> String {
-        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+        const CHARSET: &[u8] =
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
         let mut rng = thread_rng();
         (0..length)
             .map(|_| {

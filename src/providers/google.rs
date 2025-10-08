@@ -1,7 +1,7 @@
 use super::{OAuthProvider, TokenResponse, UserInfo};
 use crate::config::OAuthProvider as OAuthConfig;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_urlencoded;
 
 pub struct GoogleProvider {
@@ -58,10 +58,13 @@ impl OAuthProvider for GoogleProvider {
             params.push(("nonce", nonce));
         }
 
-        let query_string = serde_urlencoded::to_string(params)
-            .expect("Failed to serialize query parameters");
+        let query_string =
+            serde_urlencoded::to_string(params).expect("Failed to serialize query parameters");
 
-        format!("https://accounts.google.com/o/oauth2/v2/auth?{}", query_string)
+        format!(
+            "https://accounts.google.com/o/oauth2/v2/auth?{}",
+            query_string
+        )
     }
 
     async fn exchange_code(&self, code: &str) -> anyhow::Result<TokenResponse> {
@@ -82,7 +85,10 @@ impl OAuthProvider for GoogleProvider {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            return Err(anyhow::anyhow!("Google token exchange failed: {}", error_text));
+            return Err(anyhow::anyhow!(
+                "Google token exchange failed: {}",
+                error_text
+            ));
         }
 
         let google_response: GoogleTokenResponse = response.json().await?;
@@ -107,7 +113,10 @@ impl OAuthProvider for GoogleProvider {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            return Err(anyhow::anyhow!("Google userinfo request failed: {}", error_text));
+            return Err(anyhow::anyhow!(
+                "Google userinfo request failed: {}",
+                error_text
+            ));
         }
 
         let google_user: GoogleUserInfo = response.json().await?;

@@ -1,10 +1,10 @@
-pub mod google;
-pub mod github;
 pub mod entra;
+pub mod github;
+pub mod google;
 
-use serde::{Deserialize, Serialize};
 use crate::config::Config;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 #[async_trait]
 pub trait OAuthProvider {

@@ -1,7 +1,7 @@
 use super::{OAuthProvider, TokenResponse, UserInfo};
 use crate::config::EntraProvider as EntraConfig;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_urlencoded;
 
 pub struct EntraProvider {
@@ -30,12 +30,6 @@ struct EntraUserInfo {
     #[serde(alias = "givenName")]
     given_name: Option<String>,
     surname: Option<String>,
-    #[serde(alias = "jobTitle")]
-    job_title: Option<String>,
-    #[serde(alias = "mobilePhone")]
-    mobile_phone: Option<String>,
-    #[serde(alias = "businessPhones")]
-    business_phones: Option<Vec<String>>,
 }
 
 impl EntraProvider {
@@ -47,7 +41,10 @@ impl EntraProvider {
     }
 
     fn get_authority_url(&self) -> String {
-        format!("https://login.microsoftonline.com/{}", self.config.tenant_id)
+        format!(
+            "https://login.microsoftonline.com/{}",
+            self.config.tenant_id
+        )
     }
 }
 
@@ -70,8 +67,8 @@ impl OAuthProvider for EntraProvider {
             params.push(("nonce", nonce));
         }
 
-        let query_string = serde_urlencoded::to_string(params)
-            .expect("Failed to serialize query parameters");
+        let query_string =
+            serde_urlencoded::to_string(params).expect("Failed to serialize query parameters");
 
         format!("{}/oauth2/v2.0/authorize?{}", authority, query_string)
     }
@@ -95,7 +92,10 @@ impl OAuthProvider for EntraProvider {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            return Err(anyhow::anyhow!("Entra token exchange failed: {}", error_text));
+            return Err(anyhow::anyhow!(
+                "Entra token exchange failed: {}",
+                error_text
+            ));
         }
 
         let entra_response: EntraTokenResponse = response.json().await?;
@@ -120,7 +120,10 @@ impl OAuthProvider for EntraProvider {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            return Err(anyhow::anyhow!("Entra userinfo request failed: {}", error_text));
+            return Err(anyhow::anyhow!(
+                "Entra userinfo request failed: {}",
+                error_text
+            ));
         }
 
         let entra_user: EntraUserInfo = response.json().await?;

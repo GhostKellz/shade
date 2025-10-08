@@ -1,18 +1,14 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 
-pub mod user;
-pub mod client;
-pub mod scope;
-pub mod group;
 pub mod audit;
+pub mod client;
+pub mod group;
+pub mod scope;
+pub mod user;
 
-pub use user::*;
-pub use client::*;
-pub use scope::*;
-pub use group::*;
 pub use audit::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]

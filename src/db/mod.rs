@@ -7,7 +7,7 @@ pub async fn create_pool(database_url: &str, max_connections: u32) -> anyhow::Re
         .acquire_timeout(Duration::from_secs(3))
         .connect(database_url)
         .await?;
-    
+
     Ok(pool)
 }
 

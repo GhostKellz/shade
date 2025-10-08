@@ -1,8 +1,8 @@
+use chrono::{DateTime, Duration, Utc};
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use chrono::{DateTime, Duration, Utc};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct SessionService {
@@ -40,12 +40,13 @@ impl SessionService {
 
         let session_json = serde_json::to_string(&session)?;
         let mut conn = self.redis.clone();
-        
+
         conn.set_ex::<_, _, ()>(
             format!("session:{}", session_id),
             session_json,
             (duration_minutes * 60) as u64,
-        ).await?;
+        )
+        .await?;
 
         Ok(session)
     }
@@ -70,14 +71,15 @@ impl SessionService {
     pub async fn update_session(&self, session: &Session) -> anyhow::Result<()> {
         let session_json = serde_json::to_string(session)?;
         let mut conn = self.redis.clone();
-        
+
         let ttl_seconds = (session.expires_at - Utc::now()).num_seconds().max(0);
-        
+
         conn.set_ex::<_, _, ()>(
             format!("session:{}", session.id),
             session_json,
             ttl_seconds as u64,
-        ).await?;
+        )
+        .await?;
 
         Ok(())
     }
@@ -153,8 +155,9 @@ impl SessionService {
         let mut conn = self.redis.clone();
         let key = format!("oauth_state:{}", state);
         let value = serde_json::to_string(&data)?;
-        
-        conn.set_ex::<_, _, ()>(key, value, expires_in_seconds as u64).await?;
+
+        conn.set_ex::<_, _, ()>(key, value, expires_in_seconds as u64)
+            .await?;
         Ok(())
     }
 
@@ -162,7 +165,7 @@ impl SessionService {
         let mut conn = self.redis.clone();
         let key = format!("oauth_state:{}", state);
         let value: Option<String> = conn.get(&key).await?;
-        
+
         match value {
             Some(json) => Ok(Some(serde_json::from_str(&json)?)),
             None => Ok(None),

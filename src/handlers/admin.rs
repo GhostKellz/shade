@@ -1,13 +1,12 @@
+use crate::web::AppState;
 use axum::{
     extract::{Path, State},
-    response::{Html, Json},
     http::StatusCode,
+    response::{Html, Json},
 };
-use crate::web::AppState;
 
-pub async fn dashboard(
-    State(state): State<AppState>,
-) -> Html<String> {
+pub async fn dashboard(State(state): State<AppState>) -> Html<String> {
+    let _ = state;
     let html = r#"
 <!DOCTYPE html>
 <html>
@@ -73,12 +72,16 @@ pub async fn serve_admin(
     State(state): State<AppState>,
     Path(path): Path<String>,
 ) -> Result<Html<String>, StatusCode> {
-    Ok(Html("<h1>Admin Panel</h1><p>WASM admin interface will be served here</p>".to_string()))
+    let _ = (state, path);
+    Ok(Html(
+        "<h1>Admin Panel</h1><p>WASM admin interface will be served here</p>".to_string(),
+    ))
 }
 
 pub async fn api_handler(
     State(state): State<AppState>,
     Path(path): Path<String>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
+    let _ = (state, path);
     Err(StatusCode::NOT_IMPLEMENTED)
 }
