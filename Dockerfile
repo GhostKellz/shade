@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.83 as builder
+FROM rust:latest as builder
 
 WORKDIR /usr/src/shade
 COPY Cargo.toml ./
