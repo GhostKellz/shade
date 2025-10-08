@@ -25,6 +25,8 @@ redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 # Crypto & JWT
 jsonwebtoken = "9.2"
 ring = "0.17"
+rsa = "0.9"
+pkcs8 = { version = "0.10", features = ["std"] }
 base64 = "0.22"
 sha2 = "0.10"
 argon2 = "0.5"
@@ -57,6 +59,7 @@ thiserror = "1.0"
 
 # Async utilities
 futures = "0.3"
+async-trait = "0.1"
 
 # Password hashing and TOTP
 totp-rs = { version = "5.4", features = ["otpauth"] }

@@ -6,8 +6,8 @@ COPY Cargo.toml ./
 COPY src ./src
 COPY migrations ./migrations
 
-# Build the application (offline mode for sqlx)
-ENV SQLX_OFFLINE=true
+# Build the application
+# Note: SQLx queries will be validated at runtime, not compile-time
 RUN cargo build --release
 
 # Runtime stage

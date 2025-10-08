@@ -4,7 +4,9 @@ pub mod entra;
 
 use serde::{Deserialize, Serialize};
 use crate::config::Config;
+use async_trait::async_trait;
 
+#[async_trait]
 pub trait OAuthProvider {
     fn get_authorize_url(&self, state: &str, nonce: Option<&str>) -> String;
     async fn exchange_code(&self, code: &str) -> anyhow::Result<TokenResponse>;

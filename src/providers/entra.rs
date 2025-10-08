@@ -51,6 +51,9 @@ impl EntraProvider {
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 impl OAuthProvider for EntraProvider {
     fn get_authorize_url(&self, state: &str, nonce: Option<&str>) -> String {
         let authority = self.get_authority_url();

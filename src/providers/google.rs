@@ -39,6 +39,9 @@ impl GoogleProvider {
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 impl OAuthProvider for GoogleProvider {
     fn get_authorize_url(&self, state: &str, _nonce: Option<&str>) -> String {
         let mut params = vec![

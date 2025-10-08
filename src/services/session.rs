@@ -41,10 +41,10 @@ impl SessionService {
         let session_json = serde_json::to_string(&session)?;
         let mut conn = self.redis.clone();
         
-        conn.setex(
+        conn.set_ex::<_, _, ()>(
             format!("session:{}", session_id),
-            duration_minutes * 60,
             session_json,
+            (duration_minutes * 60) as u64,
         ).await?;
 
         Ok(session)
@@ -73,10 +73,10 @@ impl SessionService {
         
         let ttl_seconds = (session.expires_at - Utc::now()).num_seconds().max(0);
         
-        conn.setex(
+        conn.set_ex::<_, _, ()>(
             format!("session:{}", session.id),
-            ttl_seconds as u64,
             session_json,
+            ttl_seconds as u64,
         ).await?;
 
         Ok(())
@@ -84,7 +84,7 @@ impl SessionService {
 
     pub async fn delete_session(&self, session_id: &str) -> anyhow::Result<()> {
         let mut conn = self.redis.clone();
-        conn.del(format!("session:{}", session_id)).await?;
+        conn.del::<_, ()>(format!("session:{}", session_id)).await?;
         Ok(())
     }
 
@@ -134,7 +134,7 @@ impl SessionService {
             if let Some(json) = session_json {
                 if let Ok(session) = serde_json::from_str::<Session>(&json) {
                     if session.expires_at < Utc::now() {
-                        let _: () = conn.del(&key).await?;
+                        conn.del::<_, ()>(&key).await?;
                         cleaned += 1;
                     }
                 }
@@ -154,7 +154,7 @@ impl SessionService {
         let key = format!("oauth_state:{}", state);
         let value = serde_json::to_string(&data)?;
         
-        conn.setex(key, expires_in_seconds, value).await?;
+        conn.set_ex::<_, _, ()>(key, value, expires_in_seconds as u64).await?;
         Ok(())
     }
 
@@ -172,7 +172,7 @@ impl SessionService {
     pub async fn delete_oauth_state(&self, state: &str) -> anyhow::Result<()> {
         let mut conn = self.redis.clone();
         let key = format!("oauth_state:{}", state);
-        conn.del(key).await?;
+        conn.del::<_, ()>(key).await?;
         Ok(())
     }
 }

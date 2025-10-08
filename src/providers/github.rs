@@ -67,11 +67,14 @@ impl GitHubProvider {
     }
 }
 
+use async_trait::async_trait;
+
+#[async_trait]
 impl OAuthProvider for GitHubProvider {
     fn get_authorize_url(&self, state: &str, _nonce: Option<&str>) -> String {
         let params = vec![
-            ("client_id", &self.config.client_id),
-            ("redirect_uri", &self.config.redirect_uri),
+            ("client_id", self.config.client_id.as_str()),
+            ("redirect_uri", self.config.redirect_uri.as_str()),
             ("scope", "user:email"),
             ("state", state),
         ];
@@ -84,10 +87,10 @@ impl OAuthProvider for GitHubProvider {
 
     async fn exchange_code(&self, code: &str) -> anyhow::Result<TokenResponse> {
         let params = [
-            ("client_id", &self.config.client_id),
-            ("client_secret", &self.config.client_secret),
+            ("client_id", self.config.client_id.as_str()),
+            ("client_secret", self.config.client_secret.as_str()),
             ("code", code),
-            ("redirect_uri", &self.config.redirect_uri),
+            ("redirect_uri", self.config.redirect_uri.as_str()),
         ];
 
         let response = self

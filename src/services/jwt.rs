@@ -65,7 +65,7 @@ impl JwtService {
 
         let key_id = Uuid::new_v4().to_string();
         
-        let (encoding_key, decoding_key, public_key_pem) = if algorithm.to_string().starts_with("RS") {
+        let (encoding_key, decoding_key, public_key_pem) = if matches!(algorithm, Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512) {
             Self::generate_rsa_keys()?
         } else {
             return Err(anyhow::anyhow!("Only RSA algorithms are currently supported"));
@@ -81,26 +81,27 @@ impl JwtService {
     }
 
     fn generate_rsa_keys() -> anyhow::Result<(EncodingKey, DecodingKey, String)> {
-        let rng = SystemRandom::new();
-        let key_pair = RsaKeyPair::generate(&rng, 2048)?;
-        
-        let private_key_der = key_pair.private_key().as_ref();
-        let public_key_der = key_pair.public_key().as_ref();
+        use rsa::{RsaPrivateKey, RsaPublicKey};
+        use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
+        use rand::rngs::OsRng;
 
-        let private_key_pem = format!(
-            "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----",
-            general_purpose::STANDARD.encode(private_key_der)
-        );
+        // Generate RSA key pair
+        let mut rng = OsRng;
+        let private_key = RsaPrivateKey::new(&mut rng, 2048)
+            .map_err(|e| anyhow::anyhow!("Failed to generate RSA key: {}", e))?;
+        let public_key = RsaPublicKey::from(&private_key);
 
-        let public_key_pem = format!(
-            "-----BEGIN PUBLIC KEY-----\n{}\n-----END PUBLIC KEY-----",
-            general_purpose::STANDARD.encode(public_key_der)
-        );
+        // Encode keys to PEM
+        let private_pem = private_key.to_pkcs8_pem(Default::default())
+            .map_err(|e| anyhow::anyhow!("Failed to encode private key: {}", e))?;
+        let public_pem = public_key.to_public_key_pem(Default::default())
+            .map_err(|e| anyhow::anyhow!("Failed to encode public key: {}", e))?;
 
-        let encoding_key = EncodingKey::from_rsa_pem(private_key_pem.as_bytes())?;
-        let decoding_key = DecodingKey::from_rsa_pem(public_key_pem.as_bytes())?;
+        // Create encoding/decoding keys for JWT
+        let encoding_key = EncodingKey::from_rsa_pem(private_pem.as_bytes())?;
+        let decoding_key = DecodingKey::from_rsa_pem(public_pem.as_bytes())?;
 
-        Ok((encoding_key, decoding_key, public_key_pem))
+        Ok((encoding_key, decoding_key, public_pem.to_string()))
     }
 
     pub fn create_access_token(
@@ -224,7 +225,17 @@ impl JwtService {
         let mut jwk = self.extract_jwk_from_public_key()?;
         jwk.kid = self.key_id.clone();
         jwk.use_ = Some("sig".to_string());
-        jwk.alg = Some(self.algorithm.to_string());
+        jwk.alg = Some(match self.algorithm {
+            Algorithm::RS256 => "RS256",
+            Algorithm::RS384 => "RS384",
+            Algorithm::RS512 => "RS512",
+            Algorithm::ES256 => "ES256",
+            Algorithm::ES384 => "ES384",
+            Algorithm::HS256 => "HS256",
+            Algorithm::HS384 => "HS384",
+            Algorithm::HS512 => "HS512",
+            _ => "RS256",
+        }.to_string());
 
         Ok(JwkSet {
             keys: vec![jwk],
@@ -252,29 +263,17 @@ impl JwtService {
     }
 
     fn extract_rsa_components(der_bytes: &[u8]) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
-        use ring::io::der;
+        // Use rsa crate to parse DER-encoded public key
+        use rsa::RsaPublicKey;
+        use rsa::pkcs8::DecodePublicKey;
+        use rsa::traits::PublicKeyParts;
 
-        let input = der::Input::from(der_bytes);
-        let (n, e) = input.read_all((), |input| {
-            der::nested(input, der::Tag::Sequence, (), |input| {
-                let _algorithm = der::nested(input, der::Tag::Sequence, (), |input| {
-                    let _oid = der::expect_tag_and_get_value(input, der::Tag::OID)?;
-                    let _params = der::expect_tag_and_get_value(input, der::Tag::Null)?;
-                    Ok(())
-                })?;
-                
-                let public_key_bits = der::bit_string_with_no_unused_bits(input)?;
-                let public_key_input = der::Input::from(public_key_bits);
-                
-                public_key_input.read_all((), |input| {
-                    der::nested(input, der::Tag::Sequence, (), |input| {
-                        let n = der::positive_integer(input)?;
-                        let e = der::positive_integer(input)?;
-                        Ok((n.as_slice_less_safe().to_vec(), e.as_slice_less_safe().to_vec()))
-                    })
-                })
-            })
-        })?;
+        let public_key = RsaPublicKey::from_public_key_der(der_bytes)
+            .map_err(|e| anyhow::anyhow!("Failed to parse RSA public key: {}", e))?;
+
+        // Extract n and e components
+        let n = public_key.n().to_bytes_be();
+        let e = public_key.e().to_bytes_be();
 
         Ok((n, e))
     }
